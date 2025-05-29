@@ -1,63 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "./Layout";
-// import "../styles/DeleteTaskStyle.css";
-
-// --- Dummy Data (simulate sqlite) ---
-const DUMMY_TASKS = [
-  {
-    id: 'T123',
-    name: 'Finish Project Report',
-    description: 'Compile and submit the final report.',
-    dateTime: '2025-05-29T10:00',
-    priority: 'High',
-    status: 'Not Completed',
-    subtasks: [
-      {
-        id: 'T123-1',
-        name: 'Write Introduction',
-        description: 'Draft the introduction section.',
-        dateTime: '2025-05-28T15:00',
-        priority: 'Medium',
-        status: 'Completed',
-      },
-      {
-        id: 'T123-2',
-        name: 'Collect Data',
-        description: 'Gather all survey results.',
-        dateTime: '2025-05-28T16:00',
-        priority: 'High',
-        status: 'Not Completed',
-      },
-    ],
-  },
-  {
-    id: 'T124',
-    name: 'Team Meeting',
-    description: 'Weekly team standup meeting.',
-    dateTime: '2025-05-30T09:00',
-    priority: 'Medium',
-    status: 'Not Completed',
-    subtasks: [],
-  },
-];
+import "../styles/DeleteTaskStyle.css";
+import { fetchAllTasks, deleteTaskById } from "../db/queries";
 
 export default function DeleteTaskPage() {
-  const [tasks, setTasks] = useState(DUMMY_TASKS);
+  const [tasks, setTasks] = useState([]);
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [status, setStatus] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Find the selected task from the list
+  // Fetch tasks from DB on mount & after delete
+  const reloadTasks = () => {
+    fetchAllTasks()
+      .then(setTasks)
+      .catch(err => {
+        setStatus('❌ Error fetching tasks: ' + (err.message || err));
+        console.error("Fetch error:", err);
+      });
+  };
+
+  useEffect(() => {
+    reloadTasks();
+    // eslint-disable-next-line
+  }, []);
+
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
-  // Handle task selection
   const handleSelectTask = (e) => {
     setSelectedTaskId(e.target.value);
     setStatus('');
     setShowConfirm(false);
   };
 
-  // Delete the selected task
   const handleDelete = (e) => {
     e.preventDefault();
     if (!selectedTaskId) {
@@ -67,15 +41,19 @@ export default function DeleteTaskPage() {
     setShowConfirm(true);
   };
 
-  // Confirm and delete
-  const confirmDelete = () => {
-    setTasks(tasks.filter(t => t.id !== selectedTaskId));
-    setStatus(`✅ Task "${selectedTask?.name}" has been deleted.`);
-    setSelectedTaskId('');
-    setShowConfirm(false);
+  const confirmDelete = async () => {
+    try {
+      await deleteTaskById(selectedTaskId);
+      setStatus(`✅ Task "${selectedTask?.name}" has been deleted.`);
+      setShowConfirm(false);
+      setSelectedTaskId('');
+      reloadTasks();
+    } catch (err) {
+      console.error("Delete error:", err);
+      setStatus('❌ Error deleting task: ' + (err.message || err));
+    }
   };
 
-  // Cancel delete
   const cancelDelete = () => {
     setShowConfirm(false);
     setStatus('');
@@ -105,7 +83,7 @@ export default function DeleteTaskPage() {
           {selectedTask && (
             <div className="delete-task-details">
               <div><b>Description:</b> {selectedTask.description}</div>
-              <div><b>Date &amp; Time:</b> {new Date(selectedTask.dateTime).toLocaleString()}</div>
+              <div><b>Date &amp; Time:</b> {selectedTask.dateTime ? new Date(selectedTask.dateTime).toLocaleString() : ''}</div>
               <div><b>Priority:</b> {selectedTask.priority}</div>
               <div><b>Status:</b> {selectedTask.status}</div>
               {selectedTask.subtasks.length > 0 && (
@@ -119,7 +97,7 @@ export default function DeleteTaskPage() {
                           (Priority: {st.priority}, Status: {st.status})
                         </span>
                         <div className="delete-task-subtask-desc">
-                          {st.description} | {new Date(st.dateTime).toLocaleString()}
+                          {st.description} | {st.dateTime ? new Date(st.dateTime).toLocaleString() : ''}
                         </div>
                       </li>
                     ))}
@@ -148,5 +126,3 @@ export default function DeleteTaskPage() {
     </Layout>
   );
 }
-
-

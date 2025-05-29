@@ -1,4 +1,9 @@
 import { getDB } from './initDB';
+async function enableForeignKeys() {
+  await db.execute('PRAGMA foreign_keys = ON');
+}
+
+enableForeignKeys();
 
 // Generate a unique task ID (e.g., TASK-<timestamp>-<rand>)
 function generateTaskId() {
@@ -35,6 +40,8 @@ export async function addTaskWithSubtasks({ title, description, due_date, priori
   }
 }
 
+//const STATIC_USER_ID = 100; // Adjust if different in your app
+
 export async function fetchAllTasks() {
   const db = await getDB();
   const tasksResult = await db.query(
@@ -44,24 +51,34 @@ export async function fetchAllTasks() {
   const tasks = tasksResult.values || [];
   const ret = [];
   for (const task of tasks) {
-    const [id, user_id, title, description, is_completed, due_date, priority, created_at, updated_at] = task;
+    const {
+      id,
+      user_id,
+      title,
+      description,
+      is_completed,
+      due_date,
+      priority,
+      created_at,
+      updated_at
+    } = task;
     const subtasksResult = await db.query(
       `SELECT * FROM subtasks WHERE task_id = ?`,
       [id]
     );
     const subtasks = (subtasksResult.values || []).map(st => ({
-      id: st[0],
-      name: st[2],
-      description: st[3],
-      dateTime: st[4],
-      priority: st[5],
-      status: st[6] ? "Completed" : "Not Completed",
+      id: st.id,
+      name: st.title,
+      description: st.description,
+      dateTime: st.due_date,
+      priority: st.priority,
+      status: st.is_completed ? "Completed" : "Not Completed",
     }));
     ret.push({
       id,
       name: title,
       description,
-      date: due_date ? due_date.split("T")[0] : "",
+      dateTime: due_date,
       priority,
       status: is_completed ? "Completed" : "Not Completed",
       subtasks,
@@ -70,6 +87,11 @@ export async function fetchAllTasks() {
   return ret;
 }
 
+export async function deleteTaskById(taskId) {
+  const db = await getDB();
+  await db.run(`DELETE FROM subtasks WHERE task_id = ?`, [taskId]);
+  await db.run(`DELETE FROM tasks WHERE id = ?`, [taskId]);
+}
 // Export the task id generator if you want to use it elsewhere
 export { generateTaskId };
 
