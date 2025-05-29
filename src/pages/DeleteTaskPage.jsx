@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Layout from "./Layout";
-import "../styles/DeleteTaskStyle.css";
+// import "../styles/DeleteTaskStyle.css";
 
 // --- Dummy Data (simulate sqlite) ---
 const DUMMY_TASKS = [
