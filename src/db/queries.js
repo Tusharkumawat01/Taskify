@@ -72,3 +72,4 @@ export async function fetchAllTasks() {
 
 // Export the task id generator if you want to use it elsewhere
 export { generateTaskId };
+
