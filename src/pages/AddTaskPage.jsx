@@ -57,7 +57,7 @@ export default function AddTaskPage() {
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
-        navigate('/fetch');
+        navigate('/home');
       }, 1200);
       setTaskName('');
       setDescription('');
